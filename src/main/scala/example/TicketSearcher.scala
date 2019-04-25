@@ -23,10 +23,17 @@ object TicketSearcher extends App {
   }
 
   def searchTickets(keyword: String, orgs: List[Organization], users: List[User], tickets: List[Ticket]): List[Ticket] = {
-    val filteredOrgs = orgs.filter(_.asJson.noSpaces.contains(keyword))
-    val filteredUsers = users.filter(_.asJson.noSpaces.contains(keyword))
-    val filteredTickets = tickets.filter(_.asJson.noSpaces.contains(keyword))
-    filteredTickets
+    val filteredOrgIds = orgs.filter(_.asJson.noSpaces.contains(keyword)).map(_._id)
+    val filteredUserIds = users.filter(u =>
+      u.asJson.noSpaces.contains(keyword) ||
+        u.organization_id.map(filteredOrgIds.contains).getOrElse(false)
+    ).map(_._id)
+    tickets.filter(t =>
+      t.search(keyword) ||
+        t.organization_id.map(filteredOrgIds.contains).getOrElse(false) ||
+        t.assignee_id.map(filteredUserIds.contains).getOrElse(false) ||
+        filteredUserIds.contains(t.submitter_id)
+    )
   }
 
 }

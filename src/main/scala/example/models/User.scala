@@ -29,7 +29,8 @@ case class User (
                   role: String
 ) {
   def search(keyword: String): Boolean = {
-    User.unapply(this).asJson.noSpaces.contains(keyword)
+    val strToSearch = if (keyword == "") ",null," else keyword
+    User.unapply(this).get.asJson.noSpaces.contains(strToSearch)
   }
 }
 

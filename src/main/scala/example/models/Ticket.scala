@@ -26,7 +26,8 @@ case class Ticket(
                  via: String
                  ) {
   def search(keyword: String): Boolean = {
-    Ticket.unapply(this).asJson.noSpaces.contains(keyword)
+    val strToSearch = if (keyword == "") ",null," else keyword
+    Ticket.unapply(this).get.asJson.noSpaces.contains(strToSearch)
   }
 }
 

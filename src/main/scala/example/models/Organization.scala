@@ -18,7 +18,8 @@ case class Organization (
     tags: List[String]
 ) {
   def search(keyword: String): Boolean = {
-    Organization.unapply(this).asJson.noSpaces.contains(keyword)
+    val strToSearch = if (keyword == "") ",null," else keyword
+    Organization.unapply(this).get.asJson.noSpaces.contains(strToSearch)
   }
 }
 
