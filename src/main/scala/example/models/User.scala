@@ -4,8 +4,6 @@ package models
 import java.time.ZonedDateTime
 import java.util.UUID
 import shapeless.Generic
-import codecs.ZoneDateTimeCodec._
-import io.circe.syntax._
 
 case class User (
                   _id: Int,
@@ -28,10 +26,8 @@ case class User (
                   suspended: Boolean,
                   role: String
 ) {
-  def search(keyword: String): Boolean = {
-    val strToSearch = if (keyword == "") ",null," else keyword
-    User.unapply(this).get.asJson.noSpaces.contains(strToSearch)
-  }
+  def search(keyword: String): Boolean =
+    Generic[User].to(this).foldLeft((false, keyword))(keywordSearch)._1
 }
 
 case class FullUser (

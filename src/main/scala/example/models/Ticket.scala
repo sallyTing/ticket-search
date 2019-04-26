@@ -4,8 +4,6 @@ package models
 import java.time.ZonedDateTime
 import java.util.UUID
 import shapeless.Generic
-import codecs.ZoneDateTimeCodec._
-import io.circe.syntax._
 
 case class Ticket(
                  _id: UUID,
@@ -25,10 +23,8 @@ case class Ticket(
                  due_at: Option[ZonedDateTime],
                  via: String
                  ) {
-  def search(keyword: String): Boolean = {
-    val strToSearch = if (keyword == "") ",null," else keyword
-    Ticket.unapply(this).get.asJson.noSpaces.contains(strToSearch)
-  }
+  def search(keyword: String): Boolean =
+    Generic[Ticket].to(this).foldLeft((false, keyword))(keywordSearch)._1
 }
 
 case class FullTicket(

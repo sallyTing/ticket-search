@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter
 
 object ZoneDateTimeCodec {
 
-  private val formatter =
+  val formatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssz")
 
   implicit val zoneDateTimeEncoder: io.circe.Encoder[ZonedDateTime] =

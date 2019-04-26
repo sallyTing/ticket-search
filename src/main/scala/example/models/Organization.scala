@@ -3,8 +3,7 @@ package models
 
 import java.time.ZonedDateTime
 import java.util.UUID
-import codecs.ZoneDateTimeCodec._
-import io.circe.syntax._
+import shapeless.Generic
 
 case class Organization (
     _id: Int,
@@ -17,9 +16,7 @@ case class Organization (
     shared_tickets: Boolean,
     tags: List[String]
 ) {
-  def search(keyword: String): Boolean = {
-    val strToSearch = if (keyword == "") ",null," else keyword
-    Organization.unapply(this).get.asJson.noSpaces.contains(strToSearch)
-  }
+  def search(keyword: String): Boolean =
+    Generic[Organization].to(this).foldLeft((false, keyword))(keywordSearch)._1
 }
 
