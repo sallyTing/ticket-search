@@ -3,6 +3,7 @@ package example
 import java.time.ZonedDateTime
 import java.util.UUID
 import codecs.ZoneDateTimeCodec._
+import example.models.{Organization, Ticket, User}
 import shapeless.{Poly1, Poly2}
 
 object toSearchableString extends Poly1 {
@@ -25,5 +26,20 @@ object keywordSearch extends Poly2 {
       val result = if (key == "") toSearchableString(t) == "" else toSearchableString(t).contains(key)
       (boo || result, key)
     }
+  }
+}
+
+object Search {
+  def searchTickets(keyword: String, orgs: List[Organization], users: List[User], tickets: List[Ticket]): List[Ticket] = {
+    val filteredOrgIds = orgs.filter(_.search(keyword))
+    val filteredUserIds = users.filter(u => u.search(keyword) ||
+      u.organization_id.map(filteredOrgIds.contains).getOrElse(false)
+    ).map(_._id)
+    tickets.filter(t =>
+      t.search(keyword) ||
+        t.organization_id.map(filteredOrgIds.contains).getOrElse(false) ||
+        t.assignee_id.map(filteredUserIds.contains).getOrElse(false) ||
+        filteredUserIds.contains(t.submitter_id)
+    )
   }
 }

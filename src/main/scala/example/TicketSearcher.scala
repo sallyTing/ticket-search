@@ -1,39 +1,37 @@
 package example
 
+import cats.data.Kleisli
+import cats.effect.IO
 import example.models._
 import io.circe.generic.auto._
 import io.circe.syntax._
+import cats.implicits._
 
 object TicketSearcher extends App {
 
-  getAllData() match {
-    case Right((organizations, users, tickets)) => {
-      val searchedTickets = searchTickets("", organizations, users, tickets)
-      println(searchedTickets.map(t => FullTicket.fromTicket(t, users, organizations)).asJson)
-    }
-    case Left(e) => println(e)
-  }
+  def read[A](f: Interpreter[IO] => IO[A]) = Kleisli[IO, Interpreter[IO], A](f)
 
-  def getAllData() = {
+  def program: Kleisli[IO, Interpreter[IO], Unit] =
     for {
-      organizations <- DBConnector.getAllOrganizations()
-      users <- DBConnector.getAllRawUsers()
-      tickets <- DBConnector.getAllRawTickets()
-    } yield (organizations, users, tickets)
+      (orgs, users, tickets) <- read(_.getData())
+        .onError { case e: Throwable => read(_.log(s"Error fetching data: ${e.getMessage}")) }
+      _ <- read(_.log(""))
+      keyword <- read(_.getKeyword())
+      searchedTickets = Search.searchTickets(keyword, orgs, users, tickets)
+      _ <- read(_.log(searchedTickets.map(t => FullTicket.fromTicket(t, users, orgs)).asJson.toString()))
+    } yield ()
+
+  val interpreter = new Interpreter[IO] {
+    def getData() = IO((
+      DBConnector.getAllOrganizations(),
+      DBConnector.getAllRawUsers(),
+      DBConnector.getAllRawTickets()
+    ))
+    def getKeyword() = IO("")
+    def log(str: String) = IO(println(str))
   }
 
-  def searchTickets(keyword: String, orgs: List[Organization], users: List[User], tickets: List[Ticket]): List[Ticket] = {
-    val filteredOrgIds = orgs.filter(_.search(keyword))
-    val filteredUserIds = users.filter(u => u.search(keyword) ||
-        u.organization_id.map(filteredOrgIds.contains).getOrElse(false)
-    ).map(_._id)
-    tickets.filter(t =>
-      t.search(keyword) ||
-        t.organization_id.map(filteredOrgIds.contains).getOrElse(false) ||
-        t.assignee_id.map(filteredUserIds.contains).getOrElse(false) ||
-        filteredUserIds.contains(t.submitter_id)
-    )
-  }
+  program.run(interpreter).unsafeRunSync()
 
 }
 
