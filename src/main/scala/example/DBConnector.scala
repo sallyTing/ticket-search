@@ -20,18 +20,15 @@ object DBConnector {
   def getAllOrganizations() = {
     val content = getContentFrom("organizations")
     parse(content).flatMap(_.as[List[Organization]])
-      .getOrElse(throw new Throwable("failed to fetch organizations from json file"))
   }
 
   def getAllRawUsers() = {
     val content = getContentFrom("users")
     parse(content).flatMap(_.as[List[User]])
-      .getOrElse(throw new Throwable("failed to fetch users from json file"))
   }
 
   def getAllRawTickets() = {
     val content = getContentFrom("tickets")
     parse(content).flatMap(_.as[List[Ticket]])
-      .getOrElse(throw new Throwable("failed to fetch tickets from json file"))
   }
 }

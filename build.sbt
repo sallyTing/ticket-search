@@ -24,7 +24,8 @@ lazy val root = (project in file("."))
       "io.circe" %% "circe-generic" % circeVersion,
       "io.circe" %% "circe-parser" % circeVersion,
       "com.chuusai" %% "shapeless" % "2.3.3",
-      scalaTest % Test
+      scalaTest % Test,
+      "com.github.alexarchambault" %% "scalacheck-shapeless_1.14" % "1.2.0" % Test
     )
   )
 

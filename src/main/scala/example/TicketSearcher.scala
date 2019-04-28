@@ -12,22 +12,24 @@ object TicketSearcher extends App {
 
   def read[A](f: Interpreter[IO] => IO[A]) = Kleisli[IO, Interpreter[IO], A](f)
 
-  def program: Kleisli[IO, Interpreter[IO], Unit] =
+  def program: Kleisli[IO, Interpreter[IO], List[FullTicket]] =
     for {
       target <- read(_.getData())
         .onError { case e: Throwable => read(_.log(s"Error fetching data from json file: ${e.getMessage}")) }
       keyword <- read(_.getKeyword())
         .onError { case e: Throwable => read(_.log(s"Error asking keyword: ${e.getMessage}")) }
-      searchedTickets = Search.searchTickets(keyword, target.orgs, target.users, target.tickets)
-      _ <- read(_.log(searchedTickets.map(t => FullTicket.fromTicket(t, target.users, target.orgs)).asJson.toString()))
-    } yield ()
+      searchedFullTickets = Search.searchTickets(keyword, target.orgs, target.users, target.tickets)
+        .map(t => FullTicket.fromTicket(t, target.users, target.orgs))
+      _ <- read(_.log(searchedFullTickets.asJson.toString()))
+    } yield searchedFullTickets
 
   val interpreter = new Interpreter[IO] {
-    def getData() = IO(SearchTarget(
-      DBConnector.getAllOrganizations(),
-      DBConnector.getAllRawUsers(),
-      DBConnector.getAllRawTickets()
-    ))
+    def getData() = IO.fromEither(
+      for {
+        orgs <- DBConnector.getAllOrganizations()
+        users <- DBConnector.getAllRawUsers()
+        tickets <- DBConnector.getAllRawTickets()
+      } yield SearchTarget(orgs, users, tickets))
     def getKeyword() = IO(readLine("What to search?"))
     def log(str: String) = IO(println(str))
   }
