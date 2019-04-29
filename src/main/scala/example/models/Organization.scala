@@ -3,6 +3,9 @@ package models
 
 import java.time.ZonedDateTime
 import java.util.UUID
+import io.circe.generic.auto._
+import codecs.ZoneDateTimeCodec._
+import io.circe.parser.parse
 import shapeless.Generic
 
 case class Organization (
@@ -15,8 +18,15 @@ case class Organization (
     details: String,
     shared_tickets: Boolean,
     tags: List[String]
-) {
-  def search(keyword: String): Boolean =
-    Generic[Organization].to(this).foldLeft((false, keyword))(keywordSearch)._1
+)
+
+object Organization {
+  implicit val orgForSearch = new Searchable[Organization] {
+    def search(org: Organization, keyword: String): Boolean =
+      Generic[Organization].to(org).foldLeft((false, keyword))(keywordSearch)._1
+    def parseFromJsonString(jsonString: String): Either[Throwable, List[Organization]] =
+      parse(jsonString).flatMap(_.as[List[Organization]])
+  }
+
 }
 

@@ -3,6 +3,9 @@ package models
 
 import java.time.ZonedDateTime
 import java.util.UUID
+import io.circe.generic.auto._
+import codecs.ZoneDateTimeCodec._
+import io.circe.parser.parse
 import shapeless.Generic
 
 case class Ticket(
@@ -22,10 +25,17 @@ case class Ticket(
                  has_incidents: Boolean,
                  due_at: Option[ZonedDateTime],
                  via: String
-                 ) {
-  def search(keyword: String): Boolean =
-    Generic[Ticket].to(this).foldLeft((false, keyword))(keywordSearch)._1
+                 )
+
+object Ticket {
+  implicit val ticketForSearch = new Searchable[Ticket] {
+    def search(ticket: Ticket, keyword: String): Boolean =
+      Generic[Ticket].to(ticket).foldLeft((false, keyword))(keywordSearch)._1
+    def parseFromJsonString(jsonString: String): Either[Throwable, List[Ticket]] =
+      parse(jsonString).flatMap(_.as[List[Ticket]])
+  }
 }
+
 
 case class FullTicket(
                    _id: UUID,

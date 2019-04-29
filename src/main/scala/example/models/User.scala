@@ -3,6 +3,9 @@ package models
 
 import java.time.ZonedDateTime
 import java.util.UUID
+import io.circe.generic.auto._
+import codecs.ZoneDateTimeCodec._
+import io.circe.parser.parse
 import shapeless.Generic
 
 case class User (
@@ -25,10 +28,18 @@ case class User (
                   tags: List[String],
                   suspended: Boolean,
                   role: String
-) {
-  def search(keyword: String): Boolean =
-    Generic[User].to(this).foldLeft((false, keyword))(keywordSearch)._1
+)
+
+object User {
+  implicit val userForSearch = new Searchable[User] {
+    def search(user: User, keyword: String): Boolean =
+      Generic[User].to(user).foldLeft((false, keyword))(keywordSearch)._1
+
+    def parseFromJsonString(jsonString: String): Either[Throwable, List[User]] =
+      parse(jsonString).flatMap(_.as[List[User]])
+  }
 }
+
 
 case class FullUser (
                   _id: Int,
