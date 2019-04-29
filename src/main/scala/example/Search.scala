@@ -31,7 +31,7 @@ object keywordSearch extends Poly2 {
 
 object Search {
   def searchTickets(keyword: String, orgs: List[Organization], users: List[User], tickets: List[Ticket]): List[Ticket] = {
-    val filteredOrgIds = orgs.filter(_.search(keyword))
+    val filteredOrgIds = orgs.filter(_.search(keyword)).map(_._id)
     val filteredUserIds = users.filter(u => u.search(keyword) ||
       u.organization_id.map(filteredOrgIds.contains).getOrElse(false)
     ).map(_._id)
